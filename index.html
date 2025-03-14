@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Simple Chat App</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #AEEA94;
+      margin: 0;
+      padding: 0;
+    }
+    #username-container, #chat-container {
+      max-width: 900px;
+      margin: 50px auto;
+      background: #f0f1ee;
+      padding: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    #chat-container {
+      display: none;
+    }
+    #messages {
+      border: 1px solid #ccc;
+      height: 300px;
+      overflow-y: auto;
+      padding: 10px;
+      margin-bottom: 20px;
+      text-align: left;
+      position: relative;
+    }
+    #messageInput, #usernameInput {
+      width: 70%;
+      padding: 10px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      margin-bottom: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 1rem;
+      border: none;
+      background: #28a745;
+      color: #fff;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #218838;
+    }
+    #leaveButton {
+      background: #dc3545;
+    }
+    #leaveButton:hover {
+      background: #c82333;
+    }
+    /* Message container styles */
+    .message {
+      margin-bottom: 10px;
+      clear: both;
+      overflow: hidden;
+      padding: 5px 10px;
+      border-radius: 10px;
+      max-width: 70%;
+      word-wrap: break-word;
+    }
+    .sent {
+      background: #dcf8c6;
+      float: right;
+      text-align: right;
+    }
+    .received {
+      background: #ffffff;
+      float: left;
+      text-align: left;
+    }
+    .system {
+      text-align: center;
+      font-style: italic;
+      color: #888;
+      clear: both;
+    }
+    .timestamp {
+      font-size: 0.8rem;
+      color: #666;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Username entry section -->
+  <div id="username-container">
+    <h2>Join Chat</h2>
+    <input type="text" id="usernameInput" placeholder="Enter your name">
+    <br>
+    <button id="joinButton">Join Chat</button>
+  </div>
+
+  <!-- Chat section (hidden until user joins) -->
+  <div id="chat-container">
+    <h2>Chat App</h2>
+    <div id="messages"></div>
+    <input type="text" id="messageInput" placeholder="Enter your message...">
+    <button id="sendButton">Send</button>
+    <br><br>
+    <button id="leaveButton">Leave Chat</button>
+  </div>
+
+  <!-- Include SockJS and StompJS libraries from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+  <script>
+    let stompClient = null;
+    let userName = null;
+
+    // Updated function to display only the time in 12-hr format
+    function formatTimestamp(timestamp) {
+      const date = new Date(timestamp);
+      return date.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit', 
+        hour12: true 
+      });
+    }
+
+    // Function to display messages in the chat window
+    function displayMessage(message) {
+      const messagesDiv = document.getElementById('messages');
+      const messageElement = document.createElement('div');
+      let messageClass = '';
+
+      if (message.type === "JOIN" || message.type === "LEAVE") {
+        messageClass = 'system';
+      } else if (message.sender === userName) {
+        messageClass = 'message sent';
+      } else {
+        messageClass = 'message received';
+      }
+      messageElement.className = messageClass;
+      
+      let content = '';
+      if (message.type === "JOIN") {
+        content = `${message.sender} joined the chat.`;
+      } else if (message.type === "LEAVE") {
+        content = `${message.sender} left the chat.`;
+      } else {
+        content = `<strong>${message.sender}:</strong> ${message.content}`;
+      }
+      
+      if (message.timestamp) {
+        content += `<div class="timestamp">[${formatTimestamp(message.timestamp)}]</div>`;
+      }
+      
+      messageElement.innerHTML = content;
+      messagesDiv.appendChild(messageElement);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    // Function to connect and subscribe to the backend via SockJS & StompJS
+    function connectChat() {
+      const socket = new SockJS('http://localhost:8080/chat');
+      stompClient = Stomp.over(socket);
+      stompClient.connect({}, function(frame) {
+        console.log('Connected: ' + frame);
+        stompClient.subscribe('/topic/public', function(messageOutput) {
+          const message = JSON.parse(messageOutput.body);
+          displayMessage(message);
+        });
+        const joinMessage = {
+          sender: userName,
+          type: "JOIN"
+        };
+        stompClient.send("/app/chat.addUser", {}, JSON.stringify(joinMessage));
+      }, function(error) {
+        console.error("STOMP error: ", error);
+        alert("Could not connect to chat server. Please try again later.");
+      });
+    }
+
+    // Event listener for the Join Chat button
+    document.getElementById('joinButton').addEventListener('click', function() {
+      const inputName = document.getElementById('usernameInput').value.trim();
+      if (inputName) {
+        userName = inputName;
+        document.getElementById('username-container').style.display = 'none';
+        document.getElementById('chat-container').style.display = 'block';
+        connectChat();
+      } else {
+        alert("Please enter your name.");
+      }
+    });
+
+    // Event listeners for sending messages
+    document.getElementById('sendButton').addEventListener('click', sendMessage);
+    document.getElementById('messageInput').addEventListener('keyup', function(event) {
+      if (event.key === 'Enter') {
+        sendMessage();
+      }
+    });
+
+    function sendMessage() {
+      const messageInput = document.getElementById('messageInput');
+      const messageText = messageInput.value.trim();
+      if (messageText && stompClient) {
+        const chatMessage = {
+          sender: userName,
+          content: messageText,
+          type: 'CHAT'
+        };
+        stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(chatMessage));
+        messageInput.value = '';
+      }
+    }
+
+    // Event listener for the Leave Chat button
+    document.getElementById('leaveButton').addEventListener('click', function() {
+      if (stompClient && userName) {
+        const leaveMessage = {
+          sender: userName,
+          type: "LEAVE"
+        };
+        stompClient.send("/app/chat.leave", {}, JSON.stringify(leaveMessage));
+        stompClient.disconnect(() => {
+          console.log('Disconnected from chat');
+        });
+        document.getElementById('messages').innerHTML = '';
+        document.getElementById('chat-container').style.display = 'none';
+        document.getElementById('username-container').style.display = 'block';
+        userName = null;
+      }
+    });
+  </script>
+</body>
+</html>
