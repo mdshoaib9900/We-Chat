@@ -6,7 +6,6 @@ A **real-time chat application** built using **Spring Boot** for the backend and
 
 ### **Backend:**
 - **Spring Boot** - Framework for backend development
-- **Spring Security + JWT** - Authentication & Authorization
 - **WebSockets** - Real-time messaging
 - **Spring Data JPA** - ORM for database interaction
 - **MySQL** - Relational Database
@@ -14,12 +13,11 @@ A **real-time chat application** built using **Spring Boot** for the backend and
 - **Maven** - Dependency management
 
 ### **Frontend:**
-- **React.js (or HTML/CSS/JS if applicable)** - Frontend UI
+- Frontend UI
 - **Axios** - HTTP client for API requests
 - **Socket.IO / WebSockets** - Real-time communication
 
 ## ✨ Features
-✅ **User Authentication** (JWT-based Login/Signup)  
 ✅ **Real-time Messaging** with WebSockets  
 ✅ **Group Chat Support**  
 ✅ **Secure Communication** with encrypted tokens  
@@ -66,25 +64,5 @@ A **real-time chat application** built using **Spring Boot** for the backend and
 - **Start the frontend application**
 - Open the browser and test the chat functionality 🎉
 
-## 📜 API Endpoints
-| Method | Endpoint               | Description            |
-|--------|------------------------|------------------------|
-| POST   | `/api/auth/register`   | User Signup           |
-| POST   | `/api/auth/login`      | User Login (JWT)      |
-| GET    | `/api/messages`        | Fetch messages        |
-| POST   | `/api/messages`        | Send message          |
-
-## 📌 Future Enhancements
-- ✅ **File sharing support** 📁
-- ✅ **Voice & Video Calls** 🎥
-- ✅ **Push Notifications** 🔔
-
-## 🤝 Contribution
-Want to improve **We-Chat**? Feel free to fork this repo, create a new branch, and submit a pull request.
-
-## 💡 Author
 👤 **Mohammed Shoaib**  
-📧 [mdshoaib9900@gmail.com](mailto:mdshoaib9900@gmail.com)
-
-## ⭐ Show Your Support
-Give this project a **star 🌟** if you like it! 🚀
+📧 [mdshoaib6360@gmail.com](mailto:mdshoaib6360@gmail.com)
